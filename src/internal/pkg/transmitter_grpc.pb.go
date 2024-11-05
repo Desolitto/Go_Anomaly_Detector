@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TransmitterServiceClient interface {
-	GenerateFrequency(ctx context.Context, in *Frequency, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Frequency], error)
+	GenerateFrequency(ctx context.Context, in *FrequencyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Frequency], error)
 }
 
 type transmitterServiceClient struct {
@@ -37,13 +37,13 @@ func NewTransmitterServiceClient(cc grpc.ClientConnInterface) TransmitterService
 	return &transmitterServiceClient{cc}
 }
 
-func (c *transmitterServiceClient) GenerateFrequency(ctx context.Context, in *Frequency, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Frequency], error) {
+func (c *transmitterServiceClient) GenerateFrequency(ctx context.Context, in *FrequencyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Frequency], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &TransmitterService_ServiceDesc.Streams[0], TransmitterService_GenerateFrequency_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[Frequency, Frequency]{ClientStream: stream}
+	x := &grpc.GenericClientStream[FrequencyRequest, Frequency]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ type TransmitterService_GenerateFrequencyClient = grpc.ServerStreamingClient[Fre
 // All implementations must embed UnimplementedTransmitterServiceServer
 // for forward compatibility.
 type TransmitterServiceServer interface {
-	GenerateFrequency(*Frequency, grpc.ServerStreamingServer[Frequency]) error
+	GenerateFrequency(*FrequencyRequest, grpc.ServerStreamingServer[Frequency]) error
 	mustEmbedUnimplementedTransmitterServiceServer()
 }
 
@@ -71,7 +71,7 @@ type TransmitterServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedTransmitterServiceServer struct{}
 
-func (UnimplementedTransmitterServiceServer) GenerateFrequency(*Frequency, grpc.ServerStreamingServer[Frequency]) error {
+func (UnimplementedTransmitterServiceServer) GenerateFrequency(*FrequencyRequest, grpc.ServerStreamingServer[Frequency]) error {
 	return status.Errorf(codes.Unimplemented, "method GenerateFrequency not implemented")
 }
 func (UnimplementedTransmitterServiceServer) mustEmbedUnimplementedTransmitterServiceServer() {}
@@ -96,11 +96,11 @@ func RegisterTransmitterServiceServer(s grpc.ServiceRegistrar, srv TransmitterSe
 }
 
 func _TransmitterService_GenerateFrequency_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Frequency)
+	m := new(FrequencyRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TransmitterServiceServer).GenerateFrequency(m, &grpc.GenericServerStream[Frequency, Frequency]{ServerStream: stream})
+	return srv.(TransmitterServiceServer).GenerateFrequency(m, &grpc.GenericServerStream[FrequencyRequest, Frequency]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.

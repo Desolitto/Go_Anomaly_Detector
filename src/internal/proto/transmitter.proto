@@ -5,7 +5,7 @@ option go_package = "alien-contact-detector/internal/pkg";
 package proto;
 
 service TransmitterService {
- rpc GenerateFrequency(Frequency) returns (stream Frequency);
+ rpc GenerateFrequency(FrequencyRequest) returns (stream Frequency);
 }
 message FrequencyRequest {
   int32 num_values = 1; // Количество значений для генерации
