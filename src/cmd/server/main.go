@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
+	"os"
 	"time"
 
 	pb "alien-contact-detector/internal/pkg"
@@ -14,6 +16,17 @@ import (
 
 type TransmitterServer struct {
 	pb.UnimplementedTransmitterServiceServer
+	logFile *os.File // указатель на файл логирования
+}
+
+// Инициализация файла логов
+func newTransmitterServer(logPath string) *TransmitterServer {
+	// Создаем или открываем файл логов
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
+	}
+	return &TransmitterServer{logFile: file}
 }
 
 func GetSessionId() string {
@@ -44,29 +57,43 @@ func GetTimestamp() int64 {
 }
 
 func (s *TransmitterServer) GenerateFrequency(req *pb.FrequencyRequest, stream pb.TransmitterService_GenerateFrequencyServer) error {
+	sessionID := GetSessionId()
 	for i := 0; i < int(req.GetNumValues()); i++ {
 
 		freqData := &pb.Frequency{
-			SessionId: GetSessionId(),
+			SessionId: sessionID,
 			Frequency: GetRandomFrequency(),
 			Timestamp: GetTimestamp(),
 		}
-
+		// Логируем каждую запись
+		logEntry := fmt.Sprintf("SessionID: %s | Frequency: %.2f | Timestamp: %d\n", freqData.SessionId, freqData.Frequency, freqData.Timestamp)
+		log.Print(logEntry)
+		if _, err := s.logFile.WriteString(logEntry); err != nil {
+			return fmt.Errorf("failed to write log to file: %v", err)
+		}
 		if err := stream.Send(freqData); err != nil {
 			return err
 		}
 		time.Sleep(time.Second) // Симуляция интервала отправки данных
 	}
+	endLogEntry := fmt.Sprintf("Session %s ended\n", sessionID)
+	log.Print(endLogEntry)
+	if _, err := s.logFile.WriteString(endLogEntry); err != nil {
+		return fmt.Errorf("failed to write log to file: %v", err)
+	}
 	return nil
 }
 
 func main() {
+	logPath := "logs/server_log.txt"
+	server := newTransmitterServer(logPath)
+	defer server.logFile.Close()
 	lis, err := net.Listen("tcp", "localhost:3333")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	pb.RegisterTransmitterServiceServer(grpcServer, &TransmitterServer{})
+	pb.RegisterTransmitterServiceServer(grpcServer, server)
 	log.Printf("Server listening on localhost:3333")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
