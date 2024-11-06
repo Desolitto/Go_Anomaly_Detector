@@ -23,18 +23,35 @@ func GetSessionId() string {
 	return uuid
 }
 
+func GetRandomFrequency() float64 {
+	mean := rand.Float64()*20 - 10           // по заданию [-10, 10]
+	stdDev := rand.Float64()*(1.5-0.3) + 0.3 // [0.3, 1.5]
+
+	frequency := mean + stdDev*rand.NormFloat64()
+
+	log.Println("Generated random mean: ", mean)
+	log.Println("Generated random standard deviation: ", stdDev)
+	log.Println("Got frequency: ", frequency)
+
+	return frequency
+}
+
+func GetTimestamp() int64 {
+	timestamp := time.Now().Unix()
+	log.Println("Generated timestamp: ", timestamp)
+
+	return timestamp
+}
+
 func (s *TransmitterServer) GenerateFrequency(req *pb.FrequencyRequest, stream pb.TransmitterService_GenerateFrequencyServer) error {
 	for i := 0; i < int(req.GetNumValues()); i++ {
-		frequency := rand.Float64() * 100.0
-		timestamp := time.Now().Unix()
 
 		freqData := &pb.Frequency{
 			SessionId: GetSessionId(),
-			Frequency: frequency,
-			Timestamp: timestamp,
+			Frequency: GetRandomFrequency(),
+			Timestamp: GetTimestamp(),
 		}
 
-		// Здесь правильно отправляется *pkg.Frequency
 		if err := stream.Send(freqData); err != nil {
 			return err
 		}
@@ -44,7 +61,6 @@ func (s *TransmitterServer) GenerateFrequency(req *pb.FrequencyRequest, stream p
 }
 
 func main() {
-	// Создаём gRPC-сервер
 	lis, err := net.Listen("tcp", "localhost:3333")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
