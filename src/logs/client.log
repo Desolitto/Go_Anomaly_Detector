@@ -1,0 +1,8 @@
+2024/11/06 18:26:52 main.go:72: Received frequency: -0.074461, Mean: -0.074461, StdDev: 0.000000
+2024/11/06 18:26:53 main.go:72: Received frequency: -8.276946, Mean: -4.175704, StdDev: 4.101243
+2024/11/06 18:26:53 main.go:74: Anomaly detected! Frequency: -8.276946, Mean: -4.175704, StdDev: 4.101243
+2024/11/06 18:26:54 main.go:55: Analysis completed.
+2024/11/06 18:27:32 main.go:72: Received frequency: 7.748565, Mean: 7.748565, StdDev: 0.000000
+2024/11/06 18:27:33 main.go:72: Received frequency: -8.409074, Mean: -0.330255, StdDev: 8.078820
+2024/11/06 18:27:33 main.go:74: Anomaly detected! Frequency: -8.409074, Mean: -0.330255, StdDev: 8.078820
+2024/11/06 18:27:34 main.go:55: Analysis completed.

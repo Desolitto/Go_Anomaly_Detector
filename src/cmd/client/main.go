@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"math"
+	"os"
 
 	pb "alien-contact-detector/internal/pkg" // убедитесь, что путь правильный
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -23,7 +26,21 @@ func parseFlags() (k *float64) {
 	return
 }
 
-func analyzeFrequencies(stream pb.TransmitterService_GenerateFrequencyClient, k float64) {
+func setupLogging() *os.File {
+	// Создаем или открываем файл для логов
+	file, err := os.OpenFile("logs/client.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Error opening log file: %v", err)
+	}
+	multiWriter := io.MultiWriter(os.Stdout, file)
+	// Настраиваем логирование
+	log.SetOutput(multiWriter)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile) // Формат логов
+
+	return file
+}
+
+func analyzeFrequencies(stream pb.TransmitterService_GenerateFrequencyClient, k float64) error {
 	var (
 		sum    float64 // Сумма всех частот для вычисления среднего значения
 		sumSq  float64 // Сумма квадратов частот для вычисления дисперсии
@@ -34,8 +51,11 @@ func analyzeFrequencies(stream pb.TransmitterService_GenerateFrequencyClient, k 
 	for {
 		data, err := stream.Recv()
 		if err != nil {
-			log.Printf("Error receiving data: %v", err)
-			break
+			if err == io.EOF {
+				log.Println("Analysis completed.")
+				return nil // Exit the function without error
+			}
+			return status.Convert(err).Err() // Return the error for handling in main
 		}
 		count++
 		frequency := data.GetFrequency()
@@ -57,22 +77,28 @@ func analyzeFrequencies(stream pb.TransmitterService_GenerateFrequencyClient, k 
 }
 
 func main() {
+
 	k := parseFlags()
+	logFile := setupLogging()
+	defer logFile.Close()
+	// log.Printf("Anomaly detection coefficient: %f", *k)
 	conn, err := grpc.NewClient(defaultAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Fatalf("Failed to connect: %v", err)
 	}
 	defer conn.Close()
 
 	client := pb.NewTransmitterServiceClient(conn)
 
 	// Это хорошая практика
-	numValues := int32(10) // количество запросов
+	numValues := int32(2) // количество запросов
 
 	stream, err := client.GenerateFrequency(context.Background(), &pb.FrequencyRequest{NumValues: numValues})
 	if err != nil {
 		log.Fatalf("Error calling GenerateFrequency: %v", err)
 	}
 
-	analyzeFrequencies(stream, *k)
+	if err := analyzeFrequencies(stream, *k); err != nil {
+		log.Printf("Error during analysis: %v", err)
+	}
 }

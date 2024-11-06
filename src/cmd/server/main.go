@@ -21,7 +21,6 @@ type TransmitterServer struct {
 
 // Инициализация файла логов
 func newTransmitterServer(logPath string) *TransmitterServer {
-	// Создаем или открываем файл логов
 	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v", err)
@@ -31,7 +30,7 @@ func newTransmitterServer(logPath string) *TransmitterServer {
 
 func GetSessionId() string {
 	uuid := uuid.New().String()
-	log.Println("Generated uuid: ", uuid)
+	// log.Println("Generated uuid: ", uuid)
 
 	return uuid
 }
@@ -42,22 +41,23 @@ func GetRandomFrequency() float64 {
 
 	frequency := mean + stdDev*rand.NormFloat64()
 
-	log.Println("Generated random mean: ", mean)
-	log.Println("Generated random standard deviation: ", stdDev)
-	log.Println("Got frequency: ", frequency)
+	// log.Println("Generated random mean: ", mean)
+	// log.Println("Generated random standard deviation: ", stdDev)
+	// log.Println("Got frequency: ", frequency)
 
 	return frequency
 }
 
 func GetTimestamp() int64 {
 	timestamp := time.Now().Unix()
-	log.Println("Generated timestamp: ", timestamp)
+	// log.Println("Generated timestamp: ", timestamp)
 
 	return timestamp
 }
 
 func (s *TransmitterServer) GenerateFrequency(req *pb.FrequencyRequest, stream pb.TransmitterService_GenerateFrequencyServer) error {
 	sessionID := GetSessionId()
+	s.logFile.WriteString(fmt.Sprintf("Session %s started \n", sessionID))
 	for i := 0; i < int(req.GetNumValues()); i++ {
 
 		freqData := &pb.Frequency{
@@ -85,7 +85,7 @@ func (s *TransmitterServer) GenerateFrequency(req *pb.FrequencyRequest, stream p
 }
 
 func main() {
-	logPath := "logs/server_log.txt"
+	logPath := "logs/server.log"
 	server := newTransmitterServer(logPath)
 	defer server.logFile.Close()
 	lis, err := net.Listen("tcp", "localhost:3333")
